@@ -1,0 +1,25 @@
+-
+  name: 'Install package httpd'
+  hosts: app
+  gather_facts: yes
+  vars:
+   packages:
+     - name: httpd
+       required: True
+     - name: rsyslog
+       required: False
+  tasks:
+    - name: Install "{{ item.name }}"
+      yum:
+        name: "{{ item.name }}"
+        state: installed
+      #command: service "{{ item.name}}" start
+      when: item.required == True
+      loop: "{{ packages }}"
+
+    - name: start "{{ item.name }}" service
+      command: service "{{ item.name}}" restart
+      loop: "{{ packages }}"
+    - name: check "{{ item.name }}" down
+      command: service "{{ item.name}}" status
+      loop: "{{ packages }}"
