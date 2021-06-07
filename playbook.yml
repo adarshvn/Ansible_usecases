@@ -8,18 +8,51 @@
        required: True
      - name: rsyslog
        required: False
+     - name: nginx
+       required: True
   tasks:
-    - name: Install "{{ item.name }}"
+     # below steps to install in case Epel package is required
+    - name: make directory
+      file:
+       path: /tmp/ansible_user/
+       state: directory
+       mode: '0755'
+      when: ansible_distribution == "CentOS"
+
+    - name: fetch rpm
+      get_url:
+       url: http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+       dest: /tmp/ansible_user/
+      when: ansible_distribution == "CentOS"
+
+    - name: install rpm
+      yum:
+       name: /tmp/ansible_user/epel-release-latest-7.noarch.rpm
+       state: present
+      when: ansible_distribution == "CentOS"
+
+    - name: Remove directory after installation
+      file:
+       path: /tmp/ansible_user/
+       state: absent
+      when: ansible_distribution == "CentOS"
+    - name: install epel-release
+      yum:
+       name: epel-release
+       state: present
+      when: ansible_distribution == "CentOS"
+# Install the required pakage in centos Nodes
+
+    - name: Install packages
       yum:
         name: "{{ item.name }}"
         state: installed
-      #command: service "{{ item.name}}" start
-      when: item.required == True
+      when: item.required == True and ansible_distribution == "CentOS"
       loop: "{{ packages }}"
-
-    - name: start "{{ item.name }}" service
-      command: service "{{ item.name}}" restart
-      loop: "{{ packages }}"
-    - name: check "{{ item.name }}" down
-      command: service "{{ item.name}}" status
+# this step will start the service in centos nodes
+    - name: start installed service
+      service:
+        name: "{{ item.name }}"
+        state: started
+      when: item.required == True and ansible_distribution == "CentOS"
       loop: "{{ packages }}"
